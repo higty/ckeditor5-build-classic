@@ -83,14 +83,7 @@
     "stylelint": "stylelint --quiet --allow-empty-input 'theme/**/*.css' 'docs/**/*.css'",
     "preversion": "npm run build"
   },
-  "lint-staged": {
-    "**/*.js": [
-      "eslint --quiet"
-    ],
-    "**/*.css": [
-      "stylelint --quiet --allow-empty-input"
-    ]
-  },
+  "lint-staged": {},
   "eslintIgnore": [
     "build/**",
     "packages/**"
