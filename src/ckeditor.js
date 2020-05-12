@@ -30,7 +30,63 @@ import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
 import TextTransformation from '@ckeditor/ckeditor5-typing/src/texttransformation';
 
-export default class ClassicEditor extends ClassicEditorBase {}
+import Alignment from '@ckeditor/ckeditor5-alignment/src/alignment';
+import Highlight from '@ckeditor/ckeditor5-highlight/src/highlight';
+import CodeBlock from '@ckeditor/ckeditor5-code-block/src/codeblock';
+import Mention from '@ckeditor/ckeditor5-mention/src/mention';
+import RemoveFormat from '@ckeditor/ckeditor5-remove-format/src/removeformat';
+import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
+
+import FileDialogButtonView from '@ckeditor/ckeditor5-upload/src/ui/filedialogbuttonview';
+import FileRepository from '@ckeditor/ckeditor5-upload/src/filerepository';
+import browsefileIcon from '@ckeditor/ckeditor5-ckfinder/theme/icons/browse-files.svg';
+
+export default class ClassicEditor extends ClassicEditorBase { }
+
+export class FileUploadUI extends Plugin {
+	init() {
+		const editor = this.editor;
+		const t = editor.t;
+
+		editor.ui.componentFactory.add('fileUpload', locale => {
+			const view = new FileDialogButtonView(locale);
+
+			view.set({
+				acceptedType: "*",
+				allowMultipleFiles: true
+			});
+
+			view.buttonView.set({
+				label: t('Upload file'),
+				icon: browsefileIcon,
+				tooltip: true
+			});
+			//view.buttonView.bind('isEnabled').to(command);
+			const fileRepository = editor.plugins.get(FileRepository);
+
+			view.on('done', (evt, files) => {
+				if (files.length) {
+					const file = files[0];
+					const loader = fileRepository.createLoader(file);
+
+					// Do not throw when upload adapter is not set. FileRepository will log an error anyway.
+					if (!loader) {
+						return;
+					}
+					loader.upload().then(data => {
+						var url = loader.uploadResponse.default;
+						const content = "<a class=\"file-link-panel\" href=\"" + url + "\" target=\"_blank\">" + file.name + "</a>";
+						const viewFragment = editor.data.processor.toView(content);
+						const modelFragment = editor.data.toModel(viewFragment);
+
+						editor.model.insertContent(modelFragment);
+					});
+				}
+			});
+			return view;
+		});
+	}
+}
 
 // Plugins to include in the build.
 ClassicEditor.builtinPlugins = [
@@ -56,7 +112,14 @@ ClassicEditor.builtinPlugins = [
 	PasteFromOffice,
 	Table,
 	TableToolbar,
-	TextTransformation
+	TextTransformation,
+
+	Alignment,
+	Highlight,
+	CodeBlock,
+	Mention,
+	RemoveFormat,
+	FileUploadUI
 ];
 
 // Editor configuration.
@@ -68,6 +131,8 @@ ClassicEditor.defaultConfig = {
 			'bold',
 			'italic',
 			'link',
+			'alignment',
+			'highlight',
 			'bulletedList',
 			'numberedList',
 			'|',
@@ -75,6 +140,7 @@ ClassicEditor.defaultConfig = {
 			'outdent',
 			'|',
 			'imageUpload',
+			'fileUpload',
 			'blockQuote',
 			'insertTable',
 			'mediaEmbed',
