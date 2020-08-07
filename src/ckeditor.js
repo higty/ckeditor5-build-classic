@@ -53,7 +53,7 @@ export class FileUploadUI extends Plugin {
 
 			view.set({
 				acceptedType: "*",
-				allowMultipleFiles: true
+				allowMultipleFiles: false
 			});
 
 			view.buttonView.set({
@@ -61,30 +61,44 @@ export class FileUploadUI extends Plugin {
 				icon: browsefileIcon,
 				tooltip: true
 			});
-			//view.buttonView.bind('isEnabled').to(command);
-			const fileRepository = editor.plugins.get(FileRepository);
 
-			view.on('done', (evt, files) => {
-				if (files.length) {
-					const file = files[0];
-					const loader = fileRepository.createLoader(file);
+			view.on('done', this.done.bind(this));
 
-					// Do not throw when upload adapter is not set. FileRepository will log an error anyway.
-					if (!loader) {
-						return;
-					}
-					loader.upload().then(data => {
-						var url = loader.uploadResponse.default;
-						const content = "<a class=\"file-link-panel\" href=\"" + url + "\" target=\"_blank\">" + file.name + "</a>";
-						const viewFragment = editor.data.processor.toView(content);
-						const modelFragment = editor.data.toModel(viewFragment);
-
-						editor.model.insertContent(modelFragment);
-					});
-				}
-			});
 			return view;
 		});
+	}
+	done(evt, files) {
+		if (window["CKEditor_FileUploadUI_Done"] != null) {
+			var f = window["CKEditor_FileUploadUI_Done"];
+			f(evt, files);
+			return;
+		}
+		const editor = this.editor;
+		const t = editor.t;
+		const fileRepository = editor.plugins.get(FileRepository);
+
+		if (files.length) {
+			const file = files[0];
+			const loader = fileRepository.createLoader(file);
+
+			// Do not throw when upload adapter is not set. FileRepository will log an error anyway.
+			if (!loader) {
+				return;
+			}
+			loader.upload().then(data => {
+				var url = loader.uploadResponse.default;
+				const content = "<a class=\"file-link-panel\" href=\"" + url + "\" target=\"_blank\">" + file.name + "</a>";
+				const viewFragment = editor.data.processor.toView(content);
+				const modelFragment = editor.data.toModel(viewFragment);
+
+				editor.model.insertContent(modelFragment);
+			}).catch(reason => {
+				const content = "<p>" + reason + "</p>";
+				const viewFragment = editor.data.processor.toView(content);
+				const modelFragment = editor.data.toModel(viewFragment);
+				editor.model.insertContent(modelFragment);
+			});
+		}
 	}
 }
 
